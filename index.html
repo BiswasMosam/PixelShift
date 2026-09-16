@@ -30,7 +30,7 @@
     </div>
 
     <div class="card">
-      <input type="file" id="fileInput" accept="image/*" multiple />
+      <input type="file" id="fileInput" accept="image/*,.heic,.heif,.tif,.tiff,.ico,.svg,.avif,.jxl" multiple />
 
       <!-- Empty state: full upload zone -->
       <div class="upload-zone" id="uploadZone">
@@ -43,7 +43,7 @@
         </div>
         <p class="upload-title">Drop your images here</p>
         <p class="upload-sub">or <button class="browse-link" type="button">browse files</button></p>
-        <p class="upload-types">PNG · JPG · WEBP · GIF · BMP · AVIF</p>
+        <p class="upload-types">HEIC · JPG · PNG · WEBP · AVIF · TIFF · GIF · BMP · ICO · SVG</p>
       </div>
 
       <!-- Loaded state: compact add-more strip -->
@@ -56,6 +56,8 @@
         </div>
         <span id="fileCount" class="file-count"></span>
       </div>
+
+      <p class="notice hidden" id="notice" role="alert"></p>
 
       <!-- Image grid -->
       <div class="img-grid hidden" id="imgGrid"></div>
@@ -73,8 +75,20 @@
         <button class="fmt" data-fmt="image/jpeg" data-ext="jpg" type="button">
           <strong>JPG</strong><em>Compressed</em>
         </button>
-        <button class="fmt" data-fmt="image/webp" data-ext="webp" type="button">
+        <button class="fmt" data-fmt="image/webp" data-ext="webp" data-probe type="button">
           <strong>WEBP</strong><em>Modern</em>
+        </button>
+        <button class="fmt" data-fmt="image/avif" data-ext="avif" data-probe type="button">
+          <strong>AVIF</strong><em>Smallest</em>
+        </button>
+        <button class="fmt" data-fmt="image/tiff" data-ext="tiff" type="button">
+          <strong>TIFF</strong><em>Print</em>
+        </button>
+        <button class="fmt" data-fmt="image/bmp" data-ext="bmp" type="button">
+          <strong>BMP</strong><em>Raw</em>
+        </button>
+        <button class="fmt" data-fmt="image/x-icon" data-ext="ico" type="button">
+          <strong>ICO</strong><em>Icon · 256px</em>
         </button>
       </div>
 
@@ -120,7 +134,6 @@
     </div>
   </main>
 
-  <canvas id="canvas" style="display:none"></canvas>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="src/app.js"></script>
 </body>

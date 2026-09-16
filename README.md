@@ -19,12 +19,14 @@ PixelShift is a fully client-side image converter that runs entirely in your bro
 
 - **Batch conversion** — drop multiple images at once and convert them all in one click
 - **ZIP download** — when converting multiple images, all results are packaged into a single ZIP file automatically
-- **Format control** — convert to PNG, JPG, or WEBP with one click
-- **Quality slider** — fine-tune compression for JPG and WEBP output (1–100%)
+- **HEIC support** — iPhone photos (`.heic` / `.heif`) open in every browser, not just Safari
+- **Format control** — convert to PNG, JPG, WEBP, AVIF, TIFF, BMP, or ICO with one click
+- **Quality slider** — fine-tune compression for JPG, WEBP and AVIF output (1–100%)
 - **Drag and drop** — drag images anywhere onto the page to add them
 - **Live preview grid** — see all queued images with their filename, dimensions, and file size
 - **Individual removal** — hover any card and click × to remove just that image from the queue
-- **JPG transparency fix** — automatically fills a white background when converting transparent images to JPG
+- **Transparency fix** — fills a white background when converting transparent images to JPG or BMP
+- **Clear errors** — unreadable files are skipped with a message instead of silently disappearing
 - **Progress feedback** — each card gets a green checkmark as it finishes converting
 - **Fully private** — conversion happens on-device using the HTML5 Canvas API; nothing is sent to any server
 - **No installation** — open `index.html` directly in any modern browser
@@ -35,10 +37,15 @@ PixelShift is a fully client-side image converter that runs entirely in your bro
 
 | Direction | Formats |
 |-----------|---------|
-| **Input** | PNG, JPG, WEBP, GIF, BMP, SVG, AVIF — anything the browser can display |
-| **Output** | PNG, JPG, WEBP |
+| **Input** | HEIC, HEIF, JPG, PNG, WEBP, AVIF, TIFF, GIF, BMP, ICO, SVG, plus anything else the browser can display (e.g. JPEG XL in Safari) |
+| **Output** | PNG, JPG, WEBP, TIFF, BMP, ICO, and AVIF where the browser can encode it |
 
-> **Note:** For animated GIFs, only the first frame is captured during conversion. This is a browser canvas limitation.
+> **Notes**
+> - HEIC and TIFF decoders are loaded on demand the first time you add one of those files (HEIC is ~3 MB, fetched once and cached by the browser). Safari decodes HEIC natively, so it skips the download.
+> - AVIF output only appears in browsers whose canvas can encode AVIF; elsewhere the button is hidden instead of quietly producing a PNG.
+> - ICO output is a single 256px icon (image fitted and centred on a transparent square).
+> - Multi-page TIFFs use the largest page; animated GIFs and HEIC bursts use the first frame.
+> - HEIC *output* isn't offered: browsers have no HEVC encoder.
 
 ---
 
@@ -46,8 +53,8 @@ PixelShift is a fully client-side image converter that runs entirely in your bro
 
 1. **Open** `index.html` in any modern browser (Chrome, Edge, Firefox, Safari)
 2. **Drop** your images onto the page, or click to browse your files
-3. **Pick** an output format — PNG, JPG, or WEBP
-4. **Adjust quality** (JPG / WEBP only) using the slider
+3. **Pick** an output format — PNG, JPG, WEBP, AVIF, TIFF, BMP, or ICO
+4. **Adjust quality** (JPG / WEBP / AVIF only) using the slider
 5. **Click** "Convert & Download"
    - Single image → downloads directly
    - Multiple images → downloads a ZIP containing all converted files
@@ -84,7 +91,7 @@ PixelShift/
 ├── index.html        # Markup and layout
 ├── src/
 │   ├── style.css     # All styles — dark theme, animations, responsive grid
-│   └── app.js        # All logic — file loading, canvas conversion, ZIP packaging
+│   └── app.js        # All logic — sniffing, decoding (HEIC/TIFF), encoders, ZIP packaging
 └── assets/           # Reserved for future icons or static assets
 ```
 
@@ -94,12 +101,14 @@ The entire application is three files with no build tooling. `app.js` has no mod
 
 ## How It Works
 
-1. **File reading** — `FileReader.readAsDataURL()` loads each image into memory as a base64 data URL
-2. **Canvas conversion** — each image is drawn onto an HTML5 `<canvas>` element at its natural resolution, then exported via `canvas.toDataURL(mimeType, quality)`
-3. **JPG transparency** — before drawing, a white rectangle is filled on the canvas to replace any transparent areas (canvas defaults to black for missing alpha in JPEG)
-4. **Single file** — the resulting data URL is set as an `<a>` element's `href` and `.click()` is triggered
-5. **Batch ZIP** — converted images are added to a [JSZip](https://stuk.github.io/jszip/) instance as base64 strings; a Blob URL is generated and downloaded as a `.zip` file
-6. **Fallback** — if JSZip fails to load (e.g. offline), individual files are downloaded sequentially with a small delay to prevent browser popup blocking
+1. **Sniffing** — the first bytes of each file are checked (HEIF `ftyp` brands, TIFF `II*`/`MM*`), with the extension as a fallback. This matters because Windows often reports an empty MIME type for `.heic`
+2. **Decoding** — the browser tries the file natively first. If that fails, HEIC goes through [heic-to](https://github.com/hoppergee/heic-to) (libheif in a Web Worker) and TIFF through [UTIF.js](https://github.com/photopea/UTIF.js); both produce a PNG the browser can render. Cards show a spinner while this runs
+3. **Canvas conversion** — each image is drawn onto a `<canvas>` at its natural resolution and exported with `canvas.toBlob(mimeType, quality)`
+4. **Custom encoders** — BMP (24-bit), ICO (PNG-in-ICO) and TIFF (via UTIF) are written byte by byte, since canvas can't export them
+5. **Transparency** — for JPG and BMP a white rectangle is filled first, so transparent areas don't turn black
+6. **Single file** — the result Blob is downloaded through a temporary object URL
+7. **Batch ZIP** — converted Blobs are added to a [JSZip](https://stuk.github.io/jszip/) archive (duplicate names get ` (2)`, ` (3)` suffixes) and downloaded as a `.zip` file
+8. **Fallback** — if JSZip fails to load (e.g. offline), individual files are downloaded sequentially with a small delay to prevent browser popup blocking
 
 ---
 
@@ -110,7 +119,9 @@ The entire application is three files with no build tooling. `app.js` has no mod
 | Markup | HTML5 |
 | Styles | Plain CSS (custom properties, grid, `backdrop-filter`, CSS animations) |
 | Logic | Vanilla JavaScript (ES2022, async/await) |
-| Conversion | HTML5 Canvas API (`toDataURL`) |
+| Conversion | HTML5 Canvas API (`toBlob`) + hand-written BMP / ICO encoders |
+| HEIC decode | [heic-to 1.5](https://github.com/hoppergee/heic-to) via jsDelivr, lazy-loaded |
+| TIFF decode/encode | [UTIF.js 3.1](https://github.com/photopea/UTIF.js) + pako via jsDelivr, lazy-loaded |
 | Batch ZIP | [JSZip 3.10](https://stuk.github.io/jszip/) via CDN |
 | Font | [Inter](https://fonts.google.com/specimen/Inter) via Google Fonts |
 
@@ -120,7 +131,7 @@ No framework. No bundler. No backend.
 
 ## Browser Support
 
-Works in all evergreen browsers. The WEBP output format requires a browser that supports `canvas.toDataURL('image/webp')` — supported in Chrome, Edge, and Firefox. Safari 16+ also supports it. If the browser does not support the requested MIME type, the canvas silently falls back to PNG.
+Works in all evergreen browsers. WEBP and AVIF output buttons are feature-detected at load and hidden when the browser can't encode them, so you never get a PNG mislabelled as something else. HEIC and TIFF input need a network connection the first time (to fetch the decoders); everything else works offline.
 
 ---
 
