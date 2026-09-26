@@ -1,11 +1,13 @@
-# PixelShift — Image Format Converter
+# PixelShift
 
-**A smooth, elegant browser-based tool for converting images between formats. No server, no sign-up, no limits.**
+**Convert any image, in your browser. One file or a hundred, no server, no sign-up, no limits.**
 
-![Runs in Browser](https://img.shields.io/badge/runs-in%20browser-7c3aed?style=flat-square)
-![No Upload](https://img.shields.io/badge/no%20upload-private-0ea5e9?style=flat-square)
-![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)
-![Zero Dependencies](https://img.shields.io/badge/zero%20server%20deps-clean-f59e0b?style=flat-square)
+Live at **[mosambiswas.com/PixelShift](https://www.mosambiswas.com/PixelShift/)**
+
+![Runs in Browser](https://img.shields.io/badge/runs-in%20browser-ff4d4d?style=flat-square)
+![No Upload](https://img.shields.io/badge/no%20upload-private-3ddc84?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-4d7cff?style=flat-square)
+![Zero Dependencies](https://img.shields.io/badge/zero%20server%20deps-clean-f2f2ec?style=flat-square)
 
 ---
 
@@ -59,7 +61,18 @@ PixelShift is a fully client-side image converter that runs entirely in your bro
    - Single image → downloads directly
    - Multiple images → downloads a ZIP containing all converted files
 
-To add more images after the first upload, use the "+ Add more images" strip or drop additional files anywhere on the page.
+To add more images after the first upload, use **Add more** or drop more files anywhere on the page.
+
+---
+
+## Design
+
+**A pixel, shifted.** Every pixel on a screen is three tiny lights, red, green and blue. Lined up they read as white; pulled apart they fringe into colour. That is the whole identity, and the only colour in it:
+
+- **The mark** (favicon and rail logo) is one pixel's three subpixels, with the green one nudged up.
+- **The wordmark** is drawn in square pixels on a canvas. Each pixel is three subpixels painted with additive blending, so at rest they add up to white. Push them with the cursor and they spring back at different speeds (red first, blue last) and trail colour. The pixels assemble left to right on load, a row glitches sideways every few seconds, and the whole name shivers while you drag files over the page. The animation loop runs only while something is moving, and not at all under reduced motion.
+- **The layout** uses the whole screen: a slim rail on the left holds the mark and the way out, the empty screen is one big drop target, and once images are in, the grid takes the space and the controls sit in a panel with the convert button pinned at the bottom.
+- **Everything else is flat:** warm black, bone white, hairlines. No glows, no gradients. Transparent images sit on a checkerboard so transparency shows as transparency.
 
 ---
 
@@ -88,14 +101,17 @@ Or just download the ZIP from GitHub and open `index.html`.
 
 ```
 PixelShift/
-├── index.html        # Markup and layout
+├── index.html        # Markup: the rail, the empty screen, the workspace
 ├── src/
-│   ├── style.css     # All styles — dark theme, animations, responsive grid
-│   └── app.js        # All logic — sniffing, decoding (HEIC/TIFF), encoders, ZIP packaging
-└── assets/           # Reserved for future icons or static assets
+│   ├── style.css     # All styles: flat dark theme, rail layout, responsive grid
+│   ├── app.js        # All logic: sniffing, decoding (HEIC/TIFF), encoders, ZIP packaging
+│   └── brand.js      # The pixel wordmark and the drag-over reactions
+└── assets/
+    ├── favicon.svg, favicon-32.png, apple-touch-icon.png
+    └── fonts/        # Manrope and Space Mono, self-hosted
 ```
 
-The entire application is three files with no build tooling. `app.js` has no module system — it loads directly as a classic script.
+No build tooling. Every script is a classic script loaded straight from the page.
 
 ---
 
@@ -117,13 +133,14 @@ The entire application is three files with no build tooling. `app.js` has no mod
 | Layer | Technology |
 |-------|------------|
 | Markup | HTML5 |
-| Styles | Plain CSS (custom properties, grid, `backdrop-filter`, CSS animations) |
+| Styles | Plain CSS (custom properties, grid, flat fills) |
 | Logic | Vanilla JavaScript (ES2022, async/await) |
 | Conversion | HTML5 Canvas API (`toBlob`) + hand-written BMP / ICO encoders |
 | HEIC decode | [heic-to 1.5](https://github.com/hoppergee/heic-to) via jsDelivr, lazy-loaded |
 | TIFF decode/encode | [UTIF.js 3.1](https://github.com/photopea/UTIF.js) + pako via jsDelivr, lazy-loaded |
 | Batch ZIP | [JSZip 3.10](https://stuk.github.io/jszip/) via CDN |
-| Font | [Inter](https://fonts.google.com/specimen/Inter) via Google Fonts |
+| Wordmark | Canvas 2D, additive blending, hand-drawn 5 × 7 pixel face |
+| Fonts | [Manrope](https://fonts.google.com/specimen/Manrope) and [Space Mono](https://fonts.google.com/specimen/Space+Mono), self-hosted (SIL Open Font License) |
 
 No framework. No bundler. No backend.
 

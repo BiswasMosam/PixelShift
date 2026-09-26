@@ -192,6 +192,9 @@ function removeImage(id) {
 // ── Sync grid to images[] ──────────────────────────────
 
 function syncGrid() {
+  // The layout switches between the empty screen and the workspace on this.
+  document.body.classList.toggle('has-images', images.length > 0);
+
   if (images.length === 0) {
     show(uploadZone);
     hide(addStrip);
@@ -210,7 +213,8 @@ function syncGrid() {
   show(formatRow);
   show(btnConvert);
 
-  fileCount.textContent = `${images.length} image${images.length !== 1 ? 's' : ''}`;
+  const total = images.reduce((sum, im) => sum + im.file.size, 0);
+  fileCount.textContent = `${images.length} image${images.length !== 1 ? 's' : ''} · ${formatBytes(total)}`;
   syncConvertButton();
 
   // Remove cards whose image was deleted
@@ -271,7 +275,7 @@ function syncConvertButton() {
   btnConvert.disabled = pending > 0;
   convertLabel.textContent = pending
     ? `Decoding ${pending} image${pending !== 1 ? 's' : ''}…`
-    : n === 1 ? 'Convert & Download' : `Convert ${n} Images & Download ZIP`;
+    : n === 1 ? 'Convert and download' : `Convert ${n} images · ZIP`;
 }
 
 // ── Upload zone events ─────────────────────────────────
@@ -505,7 +509,7 @@ function resetButton() {
 function flashSuccess() {
   btnConvert.classList.add('done');
   convertIcon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
-  convertLabel.textContent = 'Done!';
+  convertLabel.textContent = 'Done. Check your downloads';
 
   setTimeout(() => {
     resetButton();
