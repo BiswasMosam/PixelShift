@@ -216,6 +216,24 @@
     wake();
   };
 
+  /* ---- easter egg: type "rgb" and the name comes apart into its three
+     channels, red one way, blue the other, green lifted, then settles ---- */
+  let typed = '';
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
+    typed = (typed + e.key.toLowerCase()).slice(-3);
+    if (typed !== 'rgb' || body.classList.contains('has-images')) return;
+    typed = '';
+    if (window.eggs) window.eggs.find('rgb');
+    if (reduced) return;
+    for (const p of pixels) {
+      p.ch[0].dx -= pitch * 2.4;
+      p.ch[1].dy -= pitch * 1.4;
+      p.ch[2].dx += pitch * 2.4;
+    }
+    wake();
+  });
+
   /* ---- intro: the pixels arrive from scattered places, left to right ---- */
   const intro = () => {
     if (reduced) return;
